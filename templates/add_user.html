@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Add User - Admin</title>
+
+    <style>
+        body {
+            font-family: Arial;
+            background: #f4f6f8;
+        }
+
+        .container {
+            width: 350px;
+            margin: 80px auto;
+            padding: 25px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        h1 {
+            margin-bottom: 10px;
+        }
+
+        h2 {
+            margin-bottom: 20px;
+            color: #555;
+        }
+
+        input, select {
+            width: 90%;
+            padding: 10px;
+            margin: 8px 0;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+
+        button {
+            width: 95%;
+            padding: 10px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #0056b3;
+        }
+
+        .back {
+            display: inline-block;
+            margin-top: 15px;
+            background: #6c757d;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 5px;
+            text-decoration: none;
+        }
+
+        .message {
+            margin: 10px 0;
+            color: green;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <h1>Online Exam System</h1>
+    <h2>Add User</h2>
+
+    {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            {% for message in messages %}
+                <div class="message">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <form method="POST">
+
+        <input type="text" name="name" placeholder="Enter Name" required>
+
+        <input type="email" name="email" placeholder="Enter Email" required>
+
+        <input type="text" name="password" placeholder="Enter Password" required>
+
+        <select name="role" required>
+            <option value="">Select Role</option>
+            <option value="student">Student</option>
+            <option value="faculty">Faculty</option>
+            <option value="admin">Admin</option>
+        </select>
+
+        <button type="submit">Add User</button>
+
+    </form>
+
+    <a href="/admin" class="back">⬅ Back to Dashboard</a>
+
+</div>
+
+</body>
+</html>

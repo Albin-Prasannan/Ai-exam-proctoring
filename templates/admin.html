@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Admin Dashboard - Online Exam System</title>
+
+    <style>
+        body {
+            font-family: Arial;
+            background: #f4f6f8;
+            margin: 0;
+        }
+
+        .container {
+            width: 80%;
+            margin: 50px auto;
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 0 12px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        h1 {
+            margin-bottom: 20px;
+        }
+
+        nav ul {
+            list-style: none;
+            padding: 0;
+            margin-bottom: 20px;
+        }
+
+        nav ul li {
+            display: inline-block;
+            margin: 10px;
+        }
+
+        nav ul li a {
+            text-decoration: none;
+            padding: 10px 15px;
+            background: #007bff;
+            color: white;
+            border-radius: 6px;
+        }
+
+        nav ul li a:hover {
+            background: #0056b3;
+        }
+
+        .logout {
+            background: #dc3545;
+        }
+
+        .logout:hover {
+            background: #a71d2a;
+        }
+
+        .message {
+            margin: 10px 0;
+            color: green;
+        }
+
+        .info {
+            margin-top: 20px;
+            color: #555;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <h1>🛠️ Admin Dashboard</h1>
+
+    <nav>
+        <ul>
+            <li><a href="/add_user">➕ Add User</a></li>
+            <li><a href="/view_users">👥 View Users</a></li>
+            <li><a href="/view_results">📊 View Results</a></li>
+            <li><a href="/logout" class="logout">🚪 Logout</a></li>
+        </ul>
+    </nav>
+
+    {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            {% for message in messages %}
+                <div class="message">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <p class="info">
+        Welcome to the Admin Dashboard.<br>
+        Use the options above to manage users, monitor results, and control the system.
+    </p>
+
+</div>
+
+</body>
+</html>

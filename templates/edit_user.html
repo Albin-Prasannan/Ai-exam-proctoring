@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Edit User - Admin</title>
+
+    <style>
+        body {
+            font-family: Arial;
+            background: #f4f6f8;
+        }
+
+        .container {
+            width: 350px;
+            margin: 80px auto;
+            padding: 25px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        h1 {
+            margin-bottom: 10px;
+        }
+
+        h2 {
+            margin-bottom: 20px;
+            color: #555;
+        }
+
+        input, select {
+            width: 90%;
+            padding: 10px;
+            margin: 8px 0;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+
+        button {
+            width: 95%;
+            padding: 10px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #0056b3;
+        }
+
+        .back {
+            display: inline-block;
+            margin-top: 15px;
+            background: #6c757d;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 5px;
+            text-decoration: none;
+        }
+
+        .message {
+            margin: 10px 0;
+            color: green;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <h1>Online Exam System</h1>
+    <h2>Edit User</h2>
+
+    {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            {% for message in messages %}
+                <div class="message">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <form method="POST">
+
+        <input type="text" name="name" value="{{ user.name }}" required>
+
+        <select name="role" required>
+            <option value="student" {% if user.role == 'student' %}selected{% endif %}>Student</option>
+            <option value="faculty" {% if user.role == 'faculty' %}selected{% endif %}>Faculty</option>
+            <option value="admin" {% if user.role == 'admin' %}selected{% endif %}>Admin</option>
+        </select>
+
+        <button type="submit">Update User</button>
+
+    </form>
+
+    <a href="/view_users" class="back">⬅ Back to Users</a>
+
+</div>
+
+</body>
+</html>

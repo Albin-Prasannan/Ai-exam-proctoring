@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Exam - Online Exam System</title>
+
+    <!-- Eye Tracking -->
+    <script src="https://webgazer.cs.brown.edu/webgazer.js"></script>
+
+    <style>
+        body { font-family: Arial; background:#f4f6f9; }
+
+        #examContent { display:none; margin-top:20px; }
+
+        #timer { font-size:22px; font-weight:bold; }
+
+        #cameraBox {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            width: 200px;
+            height: 150px;
+            border: 2px solid black;
+            background: black;
+        }
+
+        video { width:100%; height:100%; }
+
+        #startBtn {
+            padding:10px 20px;
+            font-size:16px;
+        }
+    </style>
+</head>
+
+<body data-duration="{{ duration }}">
+
+<h2>⏳ Time Left: <span id="timer"></span></h2>
+
+<button id="startBtn">Start Exam</button>
+
+<div id="cameraBox">
+    <video id="camera" autoplay muted></video>
+</div>
+
+<div id="examContent">
+
+<form id="examForm" method="POST" action="/submit_exam">
+
+<input type="hidden" name="exam_id" value="{{ exam_id }}">
+
+{% for q in questions %}
+    <p><b>{{ q.question }}</b></p>
+
+    {% for opt in q.options %}
+        <input type="radio" name="q{{ q.id }}" value="{{ opt }}" required>
+        {{ opt }}<br>
+    {% endfor %}
+
+    <br>
+{% endfor %}
+
+<button type="submit">Submit Exam</button>
+
+</form>
+
+</div>
+
+<script>
+
+let timeLeft = parseInt(document.body.dataset.duration) * 60;
+let timerInterval;
+let examStarted = false;
+
+// ===== START EXAM =====
+document.getElementById("startBtn").onclick = async function () {
+
+    document.getElementById("examContent").style.display = "block";
+    this.style.display = "none";
+
+    await startCameraMic();   // FIRST ask permissions
+    startFullscreen();        // THEN fullscreen
+    startEyeTracking();       // start proctoring
+    startAudioDetection();
+    startTimer();
+
+    examStarted = true;
+};
+
+// ===== TIMER =====
+function startTimer() {
+    updateTimer();
+
+    timerInterval = setInterval(() => {
+        timeLeft--;
+        updateTimer();
+
+        if (timeLeft <= 0) autoSubmit("Time Up");
+
+    }, 1000);
+}
+
+function updateTimer() {
+    let m = Math.floor(timeLeft/60);
+    let s = timeLeft%60;
+    document.getElementById("timer").innerText =
+        `${m}:${s<10?"0"+s:s}`;
+}
+
+// ===== AUTO SUBMIT =====
+function autoSubmit(reason) {
+    alert("⚠️ " + reason);
+    document.getElementById("examForm").submit();
+}
+
+// ===== FULLSCREEN =====
+function startFullscreen() {
+    let el = document.documentElement;
+    if (el.requestFullscreen) el.requestFullscreen();
+}
+
+// 🚨 FULLSCREEN EXIT
+document.addEventListener("fullscreenchange", () => {
+    if (!examStarted) return;
+    if (!document.fullscreenElement)
+        autoSubmit("Fullscreen Exit");
+});
+
+// 🚨 TAB SWITCH
+document.addEventListener("visibilitychange", () => {
+    if (!examStarted) return;
+    if (document.hidden)
+        autoSubmit("Tab Switch");
+});
+
+// 🚨 BLOCK SHORTCUTS
+document.addEventListener("keydown", e => {
+    if (e.ctrlKey && ["c","v","u","x"].includes(e.key.toLowerCase()))
+        e.preventDefault();
+});
+
+// 🚨 RIGHT CLICK
+document.addEventListener("contextmenu", e => e.preventDefault());
+
+
+// ===== CAMERA + MIC =====
+let audioContext, analyser;
+
+async function startCameraMic() {
+
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+            video:true, audio:true
+        });
+
+        document.getElementById("camera").srcObject = stream;
+
+        // 🎤 AUDIO ANALYSIS
+        audioContext = new AudioContext();
+        analyser = audioContext.createAnalyser();
+
+        let source = audioContext.createMediaStreamSource(stream);
+        source.connect(analyser);
+
+        console.log("Camera + Mic Started");
+
+    } catch {
+        autoSubmit("Camera/Mic Blocked");
+    }
+}
+
+
+// ===== AUDIO DETECTION =====
+function startAudioDetection() {
+
+    let data = new Uint8Array(512);
+
+    function checkAudio() {
+
+        analyser.getByteTimeDomainData(data);
+
+        let sum = 0;
+        for (let i=0;i<data.length;i++) {
+            let val = (data[i]-128)/128;
+            sum += val*val;
+        }
+
+        let volume = Math.sqrt(sum/data.length);
+
+        if (volume > 0.1) {
+            autoSubmit("Voice Detected");
+        }
+
+        requestAnimationFrame(checkAudio);
+    }
+
+    checkAudio();
+}
+
+
+// ===== EYE TRACKING =====
+function startEyeTracking() {
+
+    if (!window.webgazer) return;
+
+    webgazer.setGazeListener((data) => {
+
+        if (!data) return;
+
+        if (
+            data.x < 50 ||
+            data.x > window.innerWidth-50 ||
+            data.y < 50 ||
+            data.y > window.innerHeight-50
+        ) {
+            autoSubmit("Looking Away");
+        }
+
+    }).begin();
+}
+
+
+// ===== CLEANUP =====
+window.onbeforeunload = () => {
+    clearInterval(timerInterval);
+};
+
+</script>
+
+</body>
+</html>

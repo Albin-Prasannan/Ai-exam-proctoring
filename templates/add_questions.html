@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Add Questions - Online Exam System</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; max-width: 800px; }
+        .section { margin-bottom: 30px; padding: 15px; border: 1px solid #ccc; border-radius: 5px; }
+        h2 { color: #333; }
+        input, textarea, select { margin: 8px 0; padding: 8px; width: 100%; box-sizing: border-box; }
+        button { padding: 10px 20px; background-color: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; margin-top: 10px; }
+        button:hover { background-color: #0056b3; }
+        .progress { font-size: 18px; font-weight: bold; color: #28a745; }
+        .back-link { margin-bottom: 20px; }
+        a { color: #007bff; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <div class="back-link">
+        <a href="/faculty">← Back to Dashboard</a>
+    </div>
+
+    <h1>Add Questions Workflow</h1>
+
+    {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            {% for message in messages %}
+                <div style="color: green; padding: 10px; background-color: #d4edda; border-radius: 5px; margin-bottom: 10px;">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <!-- Step 1: Set Question Limit -->
+    {% if not selected_exam_id %}
+    <div class="section">
+        <h2>Step 1: Set Question Limit</h2>
+        <p>Create a new exam by setting the subject, number of questions, and duration.</p>
+        <form method="POST" action="/set_question_limit">
+            <label for="subject">Subject:</label>
+            <input type="text" name="subject" placeholder="e.g., Mathematics, Physics, History" required>
+
+            <label for="total">Total Questions:</label>
+            <input type="number" name="total" min="1" placeholder="e.g., 10" required>
+
+            <label for="duration">Duration (minutes):</label>
+            <input type="number" name="duration" min="1" placeholder="e.g., 60" required>
+
+            <button type="submit">Create Exam & Continue</button>
+        </form>
+    </div>
+    {% endif %}
+
+    <!-- Step 2: Add Questions -->
+    {% if selected_exam_id %}
+    <div class="section">
+        <h2>Step 2: Add Questions</h2>
+        <div class="progress">
+            Progress: {{ count }} / {{ total }} questions added
+            {% if count >= total %}
+            <span style="color: #28a745;">✅ Complete!</span>
+            {% endif %}
+        </div>
+
+        {% if count < total %}
+        <p>Adding questions for: <strong>
+            {% for exam in exams %}
+                {% if exam.id|string == selected_exam_id|string %}
+                    {{ exam.subject }}
+                {% endif %}
+            {% endfor %}
+        </strong></p>
+
+        <form method="POST" action="/add_question">
+            <input type="hidden" name="exam_id" value="{{ selected_exam_id }}">
+
+            <label for="question">Question:</label>
+            <textarea name="question" placeholder="Enter the question text" required></textarea>
+
+            <label for="o1">Option 1:</label>
+            <input type="text" name="o1" placeholder="Option 1" required>
+
+            <label for="o2">Option 2:</label>
+            <input type="text" name="o2" placeholder="Option 2" required>
+
+            <label for="o3">Option 3:</label>
+            <input type="text" name="o3" placeholder="Option 3" required>
+
+            <label for="o4">Option 4:</label>
+            <input type="text" name="o4" placeholder="Option 4" required>
+
+            <label for="answer">Correct Answer:</label>
+            <input type="text" name="answer" placeholder="Enter the correct answer exactly as it appears above" required>
+
+            <button type="submit">Add Question</button>
+        </form>
+        {% else %}
+        <p style="font-size: 18px; color: #28a745;">✅ All {{ total }} questions have been added successfully!</p>
+        <a href="/faculty"><button type="button">Return to Dashboard</button></a>
+        {% endif %}
+    </div>
+    {% endif %}
+</body>
+</html>

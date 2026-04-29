@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Faculty Dashboard - Online Exam System</title>
+
+    <!-- Google Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .dashboard {
+            background: white;
+            width: 90%;
+            max-width: 800px;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            text-align: center;
+        }
+
+        h1 {
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .message {
+            background: #d4edda;
+            color: #155724;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+        }
+
+        .cards {
+            display: flex;
+            gap: 20px;
+            margin-top: 30px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .card {
+            flex: 1;
+            min-width: 200px;
+            padding: 30px;
+            border-radius: 10px;
+            color: white;
+            cursor: pointer;
+            transition: transform 0.3s, box-shadow 0.3s;
+            text-decoration: none;
+        }
+
+        .card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+
+        .card h2 {
+            margin-bottom: 10px;
+        }
+
+        .add { background: #007bff; }
+        .results { background: #28a745; }
+        .logout { background: #dc3545; }
+
+        .icon {
+            font-size: 40px;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="dashboard">
+
+    <h1>👨‍🏫 Faculty Dashboard</h1>
+
+    <!-- FLASH MESSAGES -->
+    {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            {% for message in messages %}
+                <div class="message">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <!-- SUCCESS MESSAGE -->
+    {% if request.args.get('msg') == 'added' %}
+        <div class="message">✅ Question Added Successfully</div>
+    {% endif %}
+
+    <!-- ACTION CARDS -->
+    <div class="cards">
+
+        <a href="/set_question_limit" class="card add">
+            <div class="icon">➕</div>
+            <h2>Add Questions</h2>
+            <p>Create and manage exam questions</p>
+        </a>
+
+        <a href="/view_results" class="card results">
+            <div class="icon">📊</div>
+            <h2>View Results</h2>
+            <p>Check student performance</p>
+        </a>
+
+        <a href="/logout" class="card logout">
+            <div class="icon">🚪</div>
+            <h2>Logout</h2>
+            <p>Sign out of the system</p>
+        </a>
+
+    </div>
+
+</div>
+
+</body>
+</html>

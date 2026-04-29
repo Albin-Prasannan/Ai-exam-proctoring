@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>All Users - Admin Panel</title>
+
+    <style>
+        body {
+            font-family: Arial;
+            background: #f4f6f8;
+        }
+
+        .container {
+            width: 90%;
+            margin: 40px auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+
+        h2 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            background: #007bff;
+            color: white;
+            padding: 10px;
+        }
+
+        td {
+            padding: 10px;
+            text-align: center;
+            border-bottom: 1px solid #ddd;
+        }
+
+        tr:hover {
+            background: #f1f1f1;
+        }
+
+        a {
+            text-decoration: none;
+            padding: 5px 10px;
+            border-radius: 5px;
+        }
+
+        .edit {
+            background: #28a745;
+            color: white;
+        }
+
+        .delete {
+            background: #dc3545;
+            color: white;
+        }
+
+        .back {
+            display: inline-block;
+            margin-top: 15px;
+            background: #6c757d;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 5px;
+        }
+
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <h2>👥 All Users</h2>
+
+    <table>
+        <tr>
+            <th>ID</th>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Role</th>
+            <th>Action</th>
+        </tr>
+
+        {% for user in users %}
+        <tr>
+            <td>{{ user.id }}</td>
+            <td>{{ user.name }}</td>
+            <td>{{ user.email }}</td>
+            <td>{{ user.role }}</td>
+            <td>
+                <a href="/edit_user/{{ user.id }}" class="edit">Edit</a>
+                <a href="/delete_user/{{ user.id }}"
+                   class="delete"
+                   onclick="return confirm('Are you sure you want to delete this user?')">
+                   Delete
+                </a>
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+
+    <a href="/admin" class="back">⬅ Back to Admin</a>
+
+</div>
+
+</body>
+</html>
