@@ -1,4 +1,4 @@
-from flask import Flask, request, redirect, render_template, session, flash
+from flask import Flask, request, redirect, render_template, session, flash,jsonify
 import sqlite3
 import threading
 from proctoring.proctoring_engine import start_proctoring
@@ -11,6 +11,7 @@ import smtplib
 from sqlite3 import IntegrityError
 import random
 import smtplib
+from proctoring.video_proctoring import log_violation, clear_violation
 
 port = int(os.environ.get("PORT", 5050))
 TOTAL_QUESTIONS = 0
@@ -586,6 +587,20 @@ def log_violation():
     db.commit()
 
     return "OK"
+@app.route('/report_violation', methods=['POST'])
+def report_violation():
+    data = request.json
+    status = data.get("status", "Unknown")
+
+    log_violation(status)
+
+    return jsonify({"success": True})
+
+
+@app.route('/clear_violation', methods=['POST'])
+def clear_violation_route():
+    clear_violation()
+    return jsonify({"success": True})
 # ALWAYS LAST
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=port)

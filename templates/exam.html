@@ -71,22 +71,31 @@ let timeLeft = parseInt(document.body.dataset.duration) * 60;
 let timerInterval;
 let examStarted = false;
 
-// ===== START EXAM =====
+// ===================== BACKEND REPORT =====================
+function reportViolation(status) {
+    fetch('/report_violation', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: status })
+    });
+}
+
+// ===================== START EXAM =====================
 document.getElementById("startBtn").onclick = async function () {
 
     document.getElementById("examContent").style.display = "block";
     this.style.display = "none";
 
-    await startCameraMic();   // FIRST ask permissions
-    startFullscreen();        // THEN fullscreen
-    startEyeTracking();       // start proctoring
+    await startCameraMic();
+    startFullscreen();
+    startEyeTracking();
     startAudioDetection();
     startTimer();
 
     examStarted = true;
 };
 
-// ===== TIMER =====
+// ===================== TIMER =====================
 function startTimer() {
     updateTimer();
 
@@ -106,43 +115,46 @@ function updateTimer() {
         `${m}:${s<10?"0"+s:s}`;
 }
 
-// ===== AUTO SUBMIT =====
+// ===================== AUTO SUBMIT =====================
 function autoSubmit(reason) {
+    reportViolation(reason);
     alert("⚠️ " + reason);
     document.getElementById("examForm").submit();
 }
 
-// ===== FULLSCREEN =====
+// ===================== FULLSCREEN =====================
 function startFullscreen() {
     let el = document.documentElement;
     if (el.requestFullscreen) el.requestFullscreen();
 }
 
-// 🚨 FULLSCREEN EXIT
 document.addEventListener("fullscreenchange", () => {
     if (!examStarted) return;
-    if (!document.fullscreenElement)
+    if (!document.fullscreenElement) {
+        reportViolation("Fullscreen Exit");
         autoSubmit("Fullscreen Exit");
+    }
 });
 
-// 🚨 TAB SWITCH
+// ===================== TAB SWITCH =====================
 document.addEventListener("visibilitychange", () => {
     if (!examStarted) return;
-    if (document.hidden)
+    if (document.hidden) {
+        reportViolation("Tab Switch");
         autoSubmit("Tab Switch");
+    }
 });
 
-// 🚨 BLOCK SHORTCUTS
+// ===================== BLOCK SHORTCUTS =====================
 document.addEventListener("keydown", e => {
     if (e.ctrlKey && ["c","v","u","x"].includes(e.key.toLowerCase()))
         e.preventDefault();
 });
 
-// 🚨 RIGHT CLICK
+// ===================== RIGHT CLICK =====================
 document.addEventListener("contextmenu", e => e.preventDefault());
 
-
-// ===== CAMERA + MIC =====
+// ===================== CAMERA + MIC =====================
 let audioContext, analyser;
 
 async function startCameraMic() {
@@ -154,7 +166,6 @@ async function startCameraMic() {
 
         document.getElementById("camera").srcObject = stream;
 
-        // 🎤 AUDIO ANALYSIS
         audioContext = new AudioContext();
         analyser = audioContext.createAnalyser();
 
@@ -168,8 +179,7 @@ async function startCameraMic() {
     }
 }
 
-
-// ===== AUDIO DETECTION =====
+// ===================== AUDIO DETECTION =====================
 function startAudioDetection() {
 
     let data = new Uint8Array(512);
@@ -187,6 +197,7 @@ function startAudioDetection() {
         let volume = Math.sqrt(sum/data.length);
 
         if (volume > 0.1) {
+            reportViolation("Voice Detected");
             autoSubmit("Voice Detected");
         }
 
@@ -196,8 +207,7 @@ function startAudioDetection() {
     checkAudio();
 }
 
-
-// ===== EYE TRACKING =====
+// ===================== EYE TRACKING =====================
 function startEyeTracking() {
 
     if (!window.webgazer) return;
@@ -212,14 +222,14 @@ function startEyeTracking() {
             data.y < 50 ||
             data.y > window.innerHeight-50
         ) {
+            reportViolation("Looking Away");
             autoSubmit("Looking Away");
         }
 
     }).begin();
 }
 
-
-// ===== CLEANUP =====
+// ===================== CLEANUP =====================
 window.onbeforeunload = () => {
     clearInterval(timerInterval);
 };
