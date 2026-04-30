@@ -12,9 +12,10 @@ from sqlite3 import IntegrityError
 import random
 import smtplib
 
+port = int(os.environ.get("PORT", 5050))
 TOTAL_QUESTIONS = 0
 app = Flask(__name__)
-app.secret_key ="secret123"
+app.secret_key = os.environ.get("SECRET_KEY")
 proctoring_running = False
 
 @app.route("/")
@@ -587,7 +588,7 @@ def log_violation():
     return "OK"
 # ALWAYS LAST
 if __name__ == "__main__":
-    app.run(debug=True, port=5050)
+    app.run(host="0.0.0.0", port=port)
 
 
 
