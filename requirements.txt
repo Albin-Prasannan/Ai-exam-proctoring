@@ -1,4 +1,4 @@
 Flask
 gunicorn
 werkzeug
-opencv-python
+opencv-python-headless
