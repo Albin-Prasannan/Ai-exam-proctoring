@@ -16,8 +16,11 @@ from proctoring.video_proctoring import log_violation, clear_violation
 port = int(os.environ.get("PORT", 5050))
 TOTAL_QUESTIONS = 0
 app = Flask(__name__)
-app.secret_key = os.environ.get("SECRET_KEY")
+app.secret_key = os.environ.get("SECRET_KEY", "supersecret123")
+print("APP INSTANCE:", id(app))
+print("SECRET KEY:", app.secret_key)
 proctoring_running = False
+
 
 @app.route("/")
 def home():
@@ -88,7 +91,6 @@ def signup():
     return render_template("signup.html")
 
 # LOGIN
-from werkzeug.security import check_password_hash
 
 @app.route("/login", methods=["POST"])
 def login():
@@ -102,21 +104,24 @@ def login():
         (email,)
     ).fetchone()
 
-    # ❌ If user not found
     if not user:
         return "Invalid Email ❌"
 
-    # 🔐 Check password
     if not check_password_hash(user["password"], password):
         return "Invalid Password ❌"
 
-    # ✅ Login success
+    # ✅ SAFE role handling
+    role = user["role"]
+
+    if not role:
+        return "Role missing for this user ❌"
+
+    role = role.strip().lower()
+
     session["user_id"] = user["id"]
-    session["role"] = user["role"].strip().lower()
+    session["role"] = role
 
-    role = session["role"]
-
-    # 🔀 Redirect based on role
+    # 🔀 Redirect
     if role == "admin":
         return redirect("/admin")
 
@@ -126,7 +131,6 @@ def login():
     elif role == "student":
         return redirect(f"/student_dashboard/{user['id']}")
 
-    # ❌ Unknown role
     return "Role not defined ❌"
 
 @app.route("/logout")
@@ -573,8 +577,6 @@ def faculty_dashboard():
     return render_template("faculty.html", exams=exams, results=results, count=count, total=total, selected_exam_id=selected_exam_id)
 @app.route("/log_violation", methods=["POST"])
 def log_violation():
-    from flask import request, session
-
     data = request.get_json()
     event = data.get("event")
 
