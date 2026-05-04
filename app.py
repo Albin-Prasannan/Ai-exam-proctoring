@@ -118,7 +118,7 @@ def signup():
         try:
             email_status = send_email(email, default_password)
         except Exception as e:
-            print("Email error:", e)
+            print("Email crash:", e)
             email_status = "Email failed"
 
         return "Signup successful! " + email_status
