@@ -43,14 +43,21 @@ Welcome to Online Exam System!
 
 Login Email: {to_email}
 Password: {password}
+
+Please change your password after login.
         """)
 
         msg["Subject"] = "Your Account Details"
-        msg["From"] = "test@example.com"
+        msg["From"] = "yourgmail@gmail.com"
         msg["To"] = to_email
 
-        server = smtplib.SMTP("sandbox.smtp.mailtrap.io", 2525)
-        server.login("YOUR_USERNAME", "YOUR_PASSWORD")
+        # ✅ Gmail SMTP
+        server = smtplib.SMTP("smtp.gmail.com", 587)
+        server.starttls()   # VERY IMPORTANT
+
+        # ✅ Use App Password here
+        server.login("albinprasannan1532@gmail.com", "chma ytqc xmfk dgdm")
+
         server.send_message(msg)
         server.quit()
 
