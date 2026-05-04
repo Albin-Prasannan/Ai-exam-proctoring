@@ -237,46 +237,112 @@ function startAudioDetection() {
 }
 
 // ===================== EYE TRACKING =====================
-let audioContext, analyser;
+function startEyeTracking() {
 
-async function startCameraMic() {
+    if (!window.webgazer) return;
 
-    try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-            video: true,
-            audio: true
-        });
+    webgazer
+        .setGazeListener((data) => {
+            if (!data) return;
 
-        const video = document.getElementById("camera");
-        video.srcObject = stream;
+            if (
+                data.x < 50 ||
+                data.x > window.innerWidth - 50 ||
+                data.y < 50 ||
+                data.y > window.innerHeight - 50
+            ) {
+                reportViolation("Looking Away");
+                autoSubmit("Looking Away");
+            }
+        })
+        .begin();
 
-        // 🔥 WAIT until video is ready (VERY IMPORTANT)
-        await new Promise((resolve) => {
-            video.onloadedmetadata = () => {
-                video.play();
-                resolve();
-            };
-        });
+    // 🔥 FORCE REMOVE ALL EXTRA UI
+    webgazer.showVideo(false);
+    webgazer.showFaceOverlay(false);
+    webgazer.showFaceFeedbackBox(false);
+    webgazer.showPredictionPoints(false);
 
-        // 🎤 Audio setup
-        audioContext = new (window.AudioContext || window.webkitAudioContext)();
-        analyser = audioContext.createAnalyser();
-
-        let source = audioContext.createMediaStreamSource(stream);
-        source.connect(analyser);
-
-        console.log("✅ Camera + Mic Ready");
-
-    } catch (err) {
-        console.log("❌ Camera/Mic Error:", err);
-        autoSubmit("Camera/Mic Blocked");
-    }
+    console.log("✅ Eye tracking started (clean)");
 }
 
 // ===================== CLEANUP =====================
 window.onbeforeunload = () => {
     clearInterval(timerInterval);
 };
+
+async function loadFaceModel() {
+    await faceapi.nets.tinyFaceDetector.loadFromUri(
+        "https://justadudewhohacks.github.io/face-api.js/models"
+    );
+    console.log("✅ Face model loaded");
+}
+
+
+let noFaceStart = null;
+let multiFaceStart = null;
+
+function startFaceDetection() {
+
+    const video = document.getElementById("camera");
+
+    async function detect() {
+
+        if (!video || video.readyState < 2) {
+            setTimeout(detect, 1000);
+            return;
+        }
+
+        try {
+            const detections = await faceapi.detectAllFaces(
+                video,
+                new faceapi.TinyFaceDetectorOptions()
+            );
+
+            console.log("Faces:", detections.length); // 🔥 DEBUG
+
+            // ================= NO FACE =================
+            if (detections.length === 0) {
+
+                if (!noFaceStart) {
+                    noFaceStart = Date.now();
+                }
+
+                if (Date.now() - noFaceStart > 5000) {
+                    reportViolation("No Face Detected");
+                    autoSubmit("No Face Detected");
+                }
+
+            } else {
+                noFaceStart = null;
+            }
+
+            // ================= MULTIPLE FACES =================
+            if (detections.length > 1) {
+
+                if (!multiFaceStart) {
+                    multiFaceStart = Date.now();
+                }
+
+                if (Date.now() - multiFaceStart > 5000) {
+                    reportViolation("Multiple Faces Detected");
+                    autoSubmit("Multiple Faces Detected");
+                }
+
+            } else {
+                multiFaceStart = null;
+            }
+
+        } catch (err) {
+            console.log("Face detection error:", err);
+        }
+
+        setTimeout(detect, 1500); // repeat every 1.5 sec
+    }
+
+    detect();
+}
+
 
 </script>
 
