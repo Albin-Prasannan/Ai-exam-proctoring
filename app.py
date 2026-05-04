@@ -42,12 +42,8 @@ from email.mime.text import MIMEText
 
 def send_email(to_email, password):
     try:
-        sender_email = os.environ.get("albinprasannan1532@gmail.com")
-        sender_pass = os.environ.get("chma ytqc xmfk dgdm")
-
-        if not sender_email or not sender_pass:
-            print("Email credentials missing")
-            return "Email config missing"
+        # 🔍 DEBUG LINE (ADD HERE)
+        print("ENV CHECK:", os.environ.get("EMAIL_USER"), os.environ.get("EMAIL_PASS"))
 
         msg = MIMEText(f"""
 Welcome to Online Exam System!
@@ -59,24 +55,25 @@ Please change your password after login.
         """)
 
         msg["Subject"] = "Your Account Details"
-        msg["From"] = sender_email
+        msg["From"] = os.environ.get("EMAIL_USER")
         msg["To"] = to_email
 
-        # ✅ Gmail SMTP
         server = smtplib.SMTP("smtp.gmail.com", 587)
         server.starttls()
 
-        # ✅ Login using Render env variables
-        server.login(sender_email, sender_pass)
+        server.login(
+            os.environ.get("EMAIL_USER"),
+            os.environ.get("EMAIL_PASS")
+        )
 
         server.send_message(msg)
         server.quit()
 
-        return "Email sent ✅"
+        return "Email sent"
 
     except Exception as e:
         print("Email error:", e)
-        return "Email failed ❌"
+        return "Email failed"
 @app.route("/signup", methods=["GET", "POST"])
 def signup():
     if request.method == "POST":
