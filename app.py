@@ -47,6 +47,7 @@ def get_db():
         g.db.row_factory = sqlite3.Row
     return g.db
 
+
 def send_email(to_email, password):
     try:
         sender_email = os.environ.get("EMAIL_USER")
@@ -67,18 +68,17 @@ Password: {password}
         msg["From"] = sender_email
         msg["To"] = to_email
 
-        server = smtplib.SMTP("smtp.gmail.com", 587)
+        # ✅ safer connection
+        server = smtplib.SMTP("smtp.gmail.com", 587, timeout=10)
         server.starttls()
-
         server.login(sender_email, sender_pass)
-
         server.send_message(msg)
         server.quit()
 
         return "Email sent"
 
     except Exception as e:
-        print("Email error:", e)
+        print("EMAIL ERROR:", e)   # 👈 VERY IMPORTANT
         return "Email failed"
     
 @app.route("/signup", methods=["GET", "POST"])
