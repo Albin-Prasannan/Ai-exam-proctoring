@@ -1,7 +1,6 @@
 from time import time
 from flask import Flask, request, redirect, render_template, session, flash,jsonify,g
 import sqlite3
-
 from proctoring.proctoring_engine import start_proctoring
 from proctoring.control import stop_event
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -9,9 +8,11 @@ import random
 import os
 from sqlite3 import IntegrityError
 import random
-from proctoring.video_proctoring import log_violation, clear_violation
 from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail
+from flask import request, jsonify, session
+from proctoring.violation_tracker import log_violation as track_violation
+from proctoring.video_proctoring import log_violation as file_violation, clear_violation
 
 
 
@@ -384,24 +385,6 @@ def exam(exam_id):
         student_id=student_id,
         duration=duration
     )
-# VIDEO
-@app.route('/check_violations')
-def check_violations():
-    violation_file = "static/violation_status.txt"
-    try:
-        if os.path.exists(violation_file):
-            with open(violation_file, 'r') as f:
-                content = f.read().strip()
-                if content:
-                    parts = content.split('|')
-                    if len(parts) >= 2:
-                        violation_detected = parts[0].lower() == 'true'
-                        message = parts[1]
-                        return {"violation": violation_detected, "message": message}
-    except Exception as e:
-        print(f"Error reading violation file: {e}")
-    
-    return {"violation": False, "message": ""}
 
 @app.route('/video')
 def video():
@@ -616,28 +599,44 @@ def faculty_dashboard():
     """).fetchall()
 
     return render_template("faculty.html", exams=exams, results=results, count=count, total=total, selected_exam_id=selected_exam_id)
-@app.route("/log_violation", methods=["POST"])
-def log_violation():
-    data = request.get_json()
-    event = data.get("event")
 
-    db = get_db()
 
-    db.execute(
-        "INSERT INTO logs (student_id, event) VALUES (?, ?)",
-        (session["user_id"], event)
-    )
-    db.commit()
-
-    return "OK"
 @app.route('/report_violation', methods=['POST'])
 def report_violation():
-    data = request.json
-    status = data.get("status", "Unknown")
+    try:
+        data = request.get_json()
+        status = data.get("status", "").lower()
 
-    log_violation(status)
+        if "user_id" not in session:
+            return jsonify({"error": "Not logged in"}), 403
 
-    return jsonify({"success": True})
+        db = get_db()
+
+        # 🧠 classify type
+        if "face" in status or "multiple" in status:
+            track_violation("face")
+        elif "voice" in status or "audio" in status:
+            track_violation("audio")
+        elif "looking" in status:
+            track_violation("eye_tracking")
+        else:
+            track_violation("eye")
+
+        # 💾 store in DB
+        db.execute(
+            "INSERT INTO logs (student_id, event) VALUES (?, ?)",
+            (session["user_id"], status)
+        )
+        db.commit()
+
+        # 📝 optional file log (for real-time status)
+        file_violation(status)
+
+        return jsonify({"success": True})
+
+    except Exception as e:
+        print("Violation error:", e)
+        return jsonify({"error": "Failed"}), 500
 
 
 @app.route('/clear_violation', methods=['POST'])
