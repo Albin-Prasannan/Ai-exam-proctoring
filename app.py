@@ -141,8 +141,18 @@ def logout():
 # ADMIN DASHBOARD
 @app.route("/admin")
 def admin():
-    if "user_id" not in session or session["role"] != "admin":
+    print("SESSION DATA:", dict(session))  # 👈 DEBUG
+
+    if "user_id" not in session:
         return redirect("/")
+
+    role = session.get("role")
+
+    print("ROLE:", role)  # 👈 DEBUG
+
+    if role != "admin":
+        return redirect("/")
+
     return render_template("admin.html")
 
 # ADD USER

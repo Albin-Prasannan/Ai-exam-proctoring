@@ -129,7 +129,7 @@
                 {% if exam.id in results %}
                     Score: {{ results[exam.id].score }} / {{ results[exam.id].total }} <br>
 
-                    {% if results[exam.id].total > 0 %}
+                    {% if results[exam.id].total and results[exam.id].total > 0 %}
                         {% set percent = (results[exam.id].score / results[exam.id].total * 100) %}
                     {% else %}
                         {% set percent = 0 %}
