@@ -1,7 +1,6 @@
 from time import time
 from flask import Flask, request, redirect, render_template, session, flash,jsonify,g
 import sqlite3
-from proctoring.proctoring_engine import start_proctoring
 from proctoring.control import stop_event
 from werkzeug.security import generate_password_hash, check_password_hash
 import random
@@ -322,9 +321,14 @@ def add_question():
 # EXAM
 @app.route("/exam/<int:exam_id>")
 def exam(exam_id):
+
+    # 🔐 Ensure logged in
+    if "user_id" not in session or session.get("role") != "student":
+        return redirect("/")
+
     db = get_db()
 
-    student_id = 1  # later session
+    student_id = session["user_id"]
 
     # ✅ Get exam details
     exam = db.execute(
@@ -333,27 +337,24 @@ def exam(exam_id):
     ).fetchone()
 
     if not exam:
-        return redirect(f"/student_dashboard/{session.get('user_id', '')}")
+        return redirect(f"/student_dashboard/{student_id}")
 
     limit = exam["total_questions"]
     duration = exam["duration"]
 
-    # ✅ Validate duration - ensure it's a positive integer
+    # ✅ Validate duration
     try:
-        duration = int(duration) if duration is not None else 30  # Default to 30 minutes
+        duration = int(duration) if duration else 30
         if duration <= 0:
-            duration = 30  # Default to 30 minutes if invalid
-    except (ValueError, TypeError):
-        duration = 30  # Default to 30 minutes if conversion fails
+            duration = 30
+    except:
+        duration = 30
 
-    # ✅ Fetch limited questions
+    # ✅ Fetch questions
     questions = db.execute(
-    "SELECT * FROM questions WHERE exam_id = ? ORDER BY RANDOM() LIMIT ?",
-    (exam_id, limit)
-).fetchall()
-
-    questions = list(questions)
-    random.shuffle(questions)
+        "SELECT * FROM questions WHERE exam_id = ? ORDER BY RANDOM() LIMIT ?",
+        (exam_id, limit)
+    ).fetchall()
 
     final_questions = []
 
@@ -373,10 +374,8 @@ def exam(exam_id):
             "options": options
         })
 
-    global proctoring_running
-    if not proctoring_running:
-        start_proctoring()
-        proctoring_running = True
+    # ❌ REMOVED backend proctoring
+    # start_proctoring()  ← not needed anymore
 
     return render_template(
         "exam.html",
