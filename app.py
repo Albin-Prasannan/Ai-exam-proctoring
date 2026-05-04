@@ -91,7 +91,12 @@ def signup():
         except IntegrityError:
             return "❌ Email already exists"
 
-        email_status = send_email(email, default_password)
+        # ✅ SAFE EMAIL HANDLING (THIS FIXES YOUR ERROR)
+        try:
+            email_status = send_email(email, default_password)
+        except Exception as e:
+            print("Email error:", e)
+            email_status = "Email failed"
 
         return f"✅ Signup successful! ({email_status})"
 
