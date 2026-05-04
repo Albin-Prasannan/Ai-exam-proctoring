@@ -1,19 +1,19 @@
 from time import time
-
 from flask import Flask, request, redirect, render_template, session, flash,jsonify,g
 import sqlite3
-import threading
+
 from proctoring.proctoring_engine import start_proctoring
 from proctoring.control import stop_event
 from werkzeug.security import generate_password_hash, check_password_hash
 import random
 import os
-from email.mime.text import MIMEText
-import smtplib
 from sqlite3 import IntegrityError
 import random
-import smtplib
 from proctoring.video_proctoring import log_violation, clear_violation
+from sendgrid import SendGridAPIClient
+from sendgrid.helpers.mail import Mail
+
+
 
 port = int(os.environ.get("PORT", 5050))
 TOTAL_QUESTIONS = 0
@@ -48,37 +48,33 @@ def get_db():
     return g.db
 
 
+
 def send_email(to_email, password):
     try:
-        sender_email = os.environ.get("EMAIL_USER")
-        sender_pass = os.environ.get("EMAIL_PASS")
+        api_key = os.environ.get("SENDGRID_API_KEY")
 
-        if not sender_email or not sender_pass:
-            print("Email credentials missing")
+        if not api_key:
+            print("SendGrid key missing")
             return "Email config missing"
 
-        msg = MIMEText(f"""
-Welcome to Online Exam System!
+        message = Mail(
+            from_email='albinprasannan1532@gmail.com',
+            to_emails=to_email,
+            subject='Your Account Details',
+            html_content=f"""
+            <h3>Welcome to Online Exam System</h3>
+            <p>Email: {to_email}</p>
+            <p>Password: {password}</p>
+            """
+        )
 
-Login Email: {to_email}
-Password: {password}
-        """)
-
-        msg["Subject"] = "Your Account Details"
-        msg["From"] = sender_email
-        msg["To"] = to_email
-
-        # ✅ safer connection
-        server = smtplib.SMTP("smtp.gmail.com", 587, timeout=10)
-        server.starttls()
-        server.login(sender_email, sender_pass)
-        server.send_message(msg)
-        server.quit()
+        sg = SendGridAPIClient(api_key)
+        sg.send(message)
 
         return "Email sent"
 
     except Exception as e:
-        print("EMAIL ERROR:", e)   # 👈 VERY IMPORTANT
+        print("EMAIL ERROR:", e)
         return "Email failed"
     
 @app.route("/signup", methods=["GET", "POST"])
@@ -96,7 +92,7 @@ def signup():
 
         db = get_db()
 
-        import time
+        
         try:
             for i in range(3):
                 try:
