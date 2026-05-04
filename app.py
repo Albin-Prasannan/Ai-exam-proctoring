@@ -51,6 +51,7 @@ def send_email(to_email, password):
     try:
         sender_email = os.environ.get("EMAIL_USER")
         sender_pass = os.environ.get("EMAIL_PASS")
+
         if not sender_email or not sender_pass:
             print("Email credentials missing")
             return "Email config missing"
@@ -60,29 +61,25 @@ Welcome to Online Exam System!
 
 Login Email: {to_email}
 Password: {password}
-
-Please change your password after login.
         """)
 
         msg["Subject"] = "Your Account Details"
         msg["From"] = sender_email
         msg["To"] = to_email
 
-        # ✅ Gmail SMTP
         server = smtplib.SMTP("smtp.gmail.com", 587)
         server.starttls()
 
-        # ✅ Login using Render env variables
         server.login(sender_email, sender_pass)
 
         server.send_message(msg)
         server.quit()
 
-        return "Email sent ✅"
+        return "Email sent"
 
     except Exception as e:
         print("Email error:", e)
-        return "Email failed ❌"
+        return "Email failed"
     
 @app.route("/signup", methods=["GET", "POST"])
 def signup():
