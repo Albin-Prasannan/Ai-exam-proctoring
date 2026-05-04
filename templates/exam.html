@@ -86,10 +86,13 @@ document.getElementById("startBtn").onclick = async function () {
     document.getElementById("examContent").style.display = "block";
     this.style.display = "none";
 
-    await startCameraMic();
-    startFullscreen();
+    await startCameraMic();     // ✅ MUST BE FIRST
+    await loadFaceModel();      // ✅ load model after camera
+
+    startFaceDetection();       // ✅ then start detection
     startEyeTracking();
     startAudioDetection();
+    startFullscreen();
     startTimer();
 
     examStarted = true;
@@ -155,32 +158,55 @@ document.addEventListener("keydown", e => {
 document.addEventListener("contextmenu", e => e.preventDefault());
 
 // ===================== CAMERA + MIC =====================
-let audioContext, analyser;
-
 async function startCameraMic() {
+
+    if (cameraStarted) return; // prevent duplicate start
+    cameraStarted = true;
 
     try {
         const stream = await navigator.mediaDevices.getUserMedia({
-            video:true, audio:true
+            video: true,
+            audio: true
         });
 
-        document.getElementById("camera").srcObject = stream;
+        const video = document.getElementById("camera");
+        video.srcObject = stream;
 
-        audioContext = new AudioContext();
+        // 🔥 wait until video is ready
+        await new Promise((resolve) => {
+            video.onloadedmetadata = () => {
+                video.play();
+                resolve();
+            };
+        });
+
+        // 🎤 Audio setup
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+
+        // 🔥 IMPORTANT: resume context (fixes browser error)
+        if (audioContext.state === "suspended") {
+            await audioContext.resume();
+        }
+
         analyser = audioContext.createAnalyser();
 
-        let source = audioContext.createMediaStreamSource(stream);
+        const source = audioContext.createMediaStreamSource(stream);
         source.connect(analyser);
 
-        console.log("Camera + Mic Started");
+        console.log("✅ Camera + Mic Ready");
 
-    } catch {
+    } catch (err) {
+        console.log("❌ Camera/Mic Error:", err);
         autoSubmit("Camera/Mic Blocked");
     }
 }
-
 // ===================== AUDIO DETECTION =====================
 function startAudioDetection() {
+
+    if (!analyser) {
+        console.log("❌ Audio analyser not ready");
+        return;
+    }
 
     let data = new Uint8Array(512);
 
@@ -189,12 +215,15 @@ function startAudioDetection() {
         analyser.getByteTimeDomainData(data);
 
         let sum = 0;
-        for (let i=0;i<data.length;i++) {
-            let val = (data[i]-128)/128;
-            sum += val*val;
+        for (let i = 0; i < data.length; i++) {
+            let val = (data[i] - 128) / 128;
+            sum += val * val;
         }
 
-        let volume = Math.sqrt(sum/data.length);
+        let volume = Math.sqrt(sum / data.length);
+
+        // 🔥 DEBUG
+        console.log("Volume:", volume);
 
         if (volume > 0.1) {
             reportViolation("Voice Detected");
@@ -208,25 +237,40 @@ function startAudioDetection() {
 }
 
 // ===================== EYE TRACKING =====================
-function startEyeTracking() {
+let audioContext, analyser;
 
-    if (!window.webgazer) return;
+async function startCameraMic() {
 
-    webgazer.setGazeListener((data) => {
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+            video: true,
+            audio: true
+        });
 
-        if (!data) return;
+        const video = document.getElementById("camera");
+        video.srcObject = stream;
 
-        if (
-            data.x < 50 ||
-            data.x > window.innerWidth-50 ||
-            data.y < 50 ||
-            data.y > window.innerHeight-50
-        ) {
-            reportViolation("Looking Away");
-            autoSubmit("Looking Away");
-        }
+        // 🔥 WAIT until video is ready (VERY IMPORTANT)
+        await new Promise((resolve) => {
+            video.onloadedmetadata = () => {
+                video.play();
+                resolve();
+            };
+        });
 
-    }).begin();
+        // 🎤 Audio setup
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        analyser = audioContext.createAnalyser();
+
+        let source = audioContext.createMediaStreamSource(stream);
+        source.connect(analyser);
+
+        console.log("✅ Camera + Mic Ready");
+
+    } catch (err) {
+        console.log("❌ Camera/Mic Error:", err);
+        autoSubmit("Camera/Mic Blocked");
+    }
 }
 
 // ===================== CLEANUP =====================
