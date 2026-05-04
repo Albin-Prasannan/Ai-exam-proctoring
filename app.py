@@ -494,20 +494,30 @@ def change_password():
 
         db = get_db()
 
+        # 🔍 Get user by email ONLY
         user = db.execute(
-            "SELECT * FROM users WHERE email=? AND password=?",
-            (email, old_pass)
+            "SELECT * FROM users WHERE email=?",
+            (email,)
         ).fetchone()
 
-        if user:
-            db.execute(
-                "UPDATE users SET password=? WHERE email=?",
-                (new_pass, email)
-            )
-            db.commit()
-            return "✅ Password changed successfully"
-        else:
-            return "❌ Incorrect email or old password"
+        if not user:
+            return "❌ User not found"
+
+        # ✅ Check old password using hash
+        if not check_password_hash(user["password"], old_pass):
+            return "❌ Incorrect old password"
+
+        # 🔐 Hash new password
+        new_hashed = generate_password_hash(new_pass)
+
+        # ✅ Update password
+        db.execute(
+            "UPDATE users SET password=? WHERE email=?",
+            (new_hashed, email)
+        )
+        db.commit()
+
+        return "✅ Password changed successfully"
 
     return render_template("change_password.html")
 
