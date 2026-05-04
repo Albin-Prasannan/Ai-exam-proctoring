@@ -1,4 +1,6 @@
-from flask import Flask, request, redirect, render_template, session, flash,jsonify
+from time import time
+
+from flask import Flask, request, redirect, render_template, session, flash,jsonify,g
 import sqlite3
 import threading
 from proctoring.proctoring_engine import start_proctoring
@@ -21,6 +23,12 @@ print("APP INSTANCE:", id(app))
 print("SECRET KEY:", app.secret_key)
 proctoring_running = False
 
+@app.teardown_appcontext
+def close_db(exception):
+    db = g.pop("db", None)
+    if db is not None:
+        db.close()
+
 
 @app.route("/")
 def home():
@@ -31,19 +39,22 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 db_path = os.path.join(BASE_DIR, "database.db")
 
 def get_db():
-    db = sqlite3.connect(db_path, check_same_thread=False)
-    db.row_factory = sqlite3.Row
-    print("Using DB:", db_path)
-    return db
-
-import os
-import smtplib
-from email.mime.text import MIMEText
+    if "db" not in g:
+        g.db = sqlite3.connect(
+            db_path,
+            timeout=10  # waits if DB is locked
+        )
+        g.db.row_factory = sqlite3.Row
+    return g.db
 
 def send_email(to_email, password):
     try:
-        # 🔍 DEBUG LINE (ADD HERE)
-        print("ENV CHECK:", os.environ.get("EMAIL_USER"), os.environ.get("EMAIL_PASS"))
+        sender_email = os.environ.get("albinprasannan1532@gmail.com")
+        sender_pass = os.environ.get("chma ytqc xmfk dgdm")
+
+        if not sender_email or not sender_pass:
+            print("Email credentials missing")
+            return "Email config missing"
 
         msg = MIMEText(f"""
 Welcome to Online Exam System!
@@ -55,25 +66,25 @@ Please change your password after login.
         """)
 
         msg["Subject"] = "Your Account Details"
-        msg["From"] = os.environ.get("EMAIL_USER")
+        msg["From"] = sender_email
         msg["To"] = to_email
 
+        # ✅ Gmail SMTP
         server = smtplib.SMTP("smtp.gmail.com", 587)
         server.starttls()
 
-        server.login(
-            os.environ.get("EMAIL_USER"),
-            os.environ.get("EMAIL_PASS")
-        )
+        # ✅ Login using Render env variables
+        server.login(sender_email, sender_pass)
 
         server.send_message(msg)
         server.quit()
 
-        return "Email sent"
+        return "Email sent ✅"
 
     except Exception as e:
         print("Email error:", e)
-        return "Email failed"
+        return "Email failed ❌"
+    
 @app.route("/signup", methods=["GET", "POST"])
 def signup():
     if request.method == "POST":
@@ -82,31 +93,39 @@ def signup():
         role = request.form.get("role")
 
         if not name or not email or not role:
-            return "⚠️ All fields are required"
+            return "All fields are required"
 
         default_password = str(random.randint(100000, 999999))
         hashed_password = generate_password_hash(default_password)
 
         db = get_db()
 
+        import time
         try:
-            db.execute("""
-                INSERT INTO users (name, email, password, role)
-                VALUES (?, ?, ?, ?)
-            """, (name, email, hashed_password, role))
-            db.commit()
+            for i in range(3):
+                try:
+                    db.execute("""
+                        INSERT INTO users (name, email, password, role)
+                        VALUES (?, ?, ?, ?)
+                    """, (name, email, hashed_password, role))
+                    db.commit()
+                    break
+                except sqlite3.OperationalError as e:
+                    if "locked" in str(e):
+                        time.sleep(1)
+                    else:
+                        raise
 
         except IntegrityError:
-            return "❌ Email already exists"
+            return "Email already exists"
 
-        # ✅ SAFE EMAIL HANDLING (THIS FIXES YOUR ERROR)
         try:
             email_status = send_email(email, default_password)
         except Exception as e:
             print("Email error:", e)
             email_status = "Email failed"
 
-        return f"✅ Signup successful! ({email_status})"
+        return "Signup successful! " + email_status
 
     return render_template("signup.html")
 
