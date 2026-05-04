@@ -49,9 +49,8 @@ def get_db():
 
 def send_email(to_email, password):
     try:
-        sender_email = os.environ.get("albinprasannan1532@gmail.com")
-        sender_pass = os.environ.get("chma ytqc xmfk dgdm")
-
+        sender_email = os.environ.get("EMAIL_USER")
+        sender_pass = os.environ.get("EMAIL_PASS")
         if not sender_email or not sender_pass:
             print("Email credentials missing")
             return "Email config missing"
