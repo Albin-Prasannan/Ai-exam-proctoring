@@ -401,6 +401,10 @@ def submit_exam():
     student_id = session["user_id"]
     exam_id = request.form.get("exam_id")
 
+    # 🔥 GET MALPRACTICE FLAG + REASON
+    malpractice = request.form.get("malpractice")
+    reason = request.form.get("malpractice_reason", "Unknown")
+
     # ❌ SAFETY CHECK
     if not exam_id:
         return "Invalid Exam Submission"
@@ -414,42 +418,51 @@ def submit_exam():
     if existing:
         return redirect(f"/student_dashboard/{student_id}")
 
-    # ✅ GET QUESTIONS ONLY FOR THIS EXAM
+    # ✅ GET QUESTIONS
     questions = db.execute(
         "SELECT * FROM questions WHERE exam_id=?",
         (exam_id,)
     ).fetchall()
 
-    score = 0
     total = len(questions)
 
-    # ✅ CALCULATE SCORE
-    for q in questions:
-        selected = request.form.get(f"q{q['id']}")
+    # 🔥 IF MALPRACTICE → FORCE ZERO
+    if malpractice == "true":
+        score = 0
+        status = f"malpractice ({reason})"
 
-        if selected and selected == q["correct_answer"]:
-            score += 1
+    else:
+        # ✅ NORMAL SCORING
+        score = 0
+        for q in questions:
+            selected = request.form.get(f"q{q['id']}")
+            if selected and selected == q["correct_answer"]:
+                score += 1
 
-    # ✅ SAVE RESULT WITH DATE
+        status = "completed"
+
+    # ✅ SAVE RESULT
     from datetime import datetime
     date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
     db.execute("""
-        INSERT INTO results (student_id, exam_id, score, total, date)
-        VALUES (?, ?, ?, ?, ?)
-    """, (student_id, exam_id, score, total, date))
+        INSERT INTO results (student_id, exam_id, score, total, date, status)
+        VALUES (?, ?, ?, ?, ?, ?)
+    """, (student_id, exam_id, score, total, date, status))
 
     db.commit()
 
+    # 🔥 STOP PROCTORING THREADS
     global proctoring_running
     if proctoring_running:
         stop_event.set()
         proctoring_running = False
 
-    # ✅ REDIRECT BACK TO DASHBOARD
+    # ✅ REDIRECT
     return redirect(f"/student_dashboard/{student_id}")
 #admin result view
 @app.route("/view_results")
+
 def view_results():
     if "user_id" not in session or session["role"] not in ["faculty", "admin"]:
         return redirect("/")

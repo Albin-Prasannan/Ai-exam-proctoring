@@ -74,6 +74,8 @@
 
 <form id="examForm" method="POST" action="/submit_exam">
 <input type="hidden" name="exam_id" value="{{ exam_id }}">
+<input type="hidden" name="malpractice" id="malpracticeFlag" value="false">
+<input type="hidden" name="malpractice_reason" id="malpracticeReason">
 
 {% for q in questions %}
     <p><b>{{ q.question }}</b></p>
@@ -131,6 +133,14 @@ function autoSubmit(reason) {
     console.log("🚨 AutoSubmit:", reason);
     reportViolation(reason);
 
+    // 🔥 SET MALPRACTICE FLAG
+    const flag = document.getElementById("malpracticeFlag");
+    if (flag) flag.value = "true";
+
+    // 🔥 (Optional) store reason
+    const reasonInput = document.getElementById("malpracticeReason");
+    if (reasonInput) reasonInput.value = reason;
+
     // 🔥 Show popup
     const popup = document.getElementById("violationPopup");
     const msg = document.getElementById("violationMessage");
@@ -143,7 +153,7 @@ function autoSubmit(reason) {
         popup.style.display = "flex";
     }
 
-    // 🔥 Countdown display
+    // 🔥 Countdown
     if (countdownEl) {
         countdownEl.innerText = "Submitting in 5 seconds...";
         const interval = setInterval(() => {
