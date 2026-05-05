@@ -7,7 +7,7 @@
     <script src="https://webgazer.cs.brown.edu/webgazer.js"></script>
 
     <!-- Face Detection -->
-    <script src="https://cdn.jsdelivr.net/npm/face-api.js"></script>
+    <script src="https://unpkg.com/face-api.js@0.22.2/dist/face-api.min.js"></script>
 
     <style>
         body { font-family: Arial; background:#f4f6f9; }
@@ -67,6 +67,13 @@
 </div>
 
 <script>
+
+if (typeof faceapi === "undefined") {
+    console.log("❌ face-api NOT loaded");
+} else {
+    console.log("✅ face-api loaded");
+}
+
 document.addEventListener("DOMContentLoaded", function () {
 
 console.log("🔥 SCRIPT LOADED");
@@ -307,9 +314,15 @@ function startEyeTracking() {
 
 // ================= FACE =================
 async function loadFaceModel() {
-    await faceapi.nets.tinyFaceDetector.loadFromUri(
-        "https://justadudewhohacks.github.io/face-api.js/models"
-    );
+
+    if (!window.faceapi) {
+        console.log("❌ faceapi missing");
+        return;
+    }
+
+    await faceapi.nets.tinyFaceDetector.loadFromUri("/static/models");
+
+    console.log("✅ Face model loaded");
 }
 
 let noFaceStart = null;
