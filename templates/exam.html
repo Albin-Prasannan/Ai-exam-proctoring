@@ -36,6 +36,31 @@
 </head>
 
 <body data-duration="{{ duration }}">
+<div id="violationPopup" style="
+    display:none;
+    position:fixed;
+    top:0;
+    left:0;
+    width:100%;
+    height:100%;
+    background:rgba(0,0,0,0.6);
+    justify-content:center;
+    align-items:center;
+    z-index:9999;
+">
+    <div style="
+        background:white;
+        padding:25px;
+        border-radius:10px;
+        text-align:center;
+        font-size:18px;
+        max-width:300px;
+    ">
+        <h3>⚠️ Exam Terminated</h3>
+        <p id="violationMessage"></p>
+        <p style="font-size:14px; color:gray;">Submitting in 5 seconds...</p>
+    </div>
+</div>
 
 <h2>⏳ Time Left: <span id="timer"></span></h2>
 
@@ -99,14 +124,40 @@ function reportViolation(status) {
 
 // ================= AUTO SUBMIT =================
 function autoSubmit(reason) {
+
     if (submitted) return;
     submitted = true;
 
     console.log("🚨 AutoSubmit:", reason);
     reportViolation(reason);
 
-    const form = document.getElementById("examForm");
-    if (form) form.submit();
+    // 🔥 Show popup
+    const popup = document.getElementById("violationPopup");
+    const msg = document.getElementById("violationMessage");
+    const countdownEl = document.getElementById("countdown");
+
+    let seconds = 5;
+
+    if (popup && msg) {
+        msg.innerText = reason;
+        popup.style.display = "flex";
+    }
+
+    // 🔥 Countdown display
+    if (countdownEl) {
+        countdownEl.innerText = "Submitting in 5 seconds...";
+        const interval = setInterval(() => {
+            seconds--;
+            countdownEl.innerText = "Submitting in " + seconds + " seconds...";
+            if (seconds <= 0) clearInterval(interval);
+        }, 1000);
+    }
+
+    // 🔥 Delay submit
+    setTimeout(() => {
+        const form = document.getElementById("examForm");
+        if (form) form.submit();
+    }, 5000);
 }
 
 // ================= FACE MODEL =================
