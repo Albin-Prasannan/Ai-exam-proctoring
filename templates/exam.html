@@ -100,15 +100,26 @@ function autoSubmit(reason) {
 // ================= START =================
 document.getElementById("startBtn").onclick = async function () {
 
+    console.log("🚀 START CLICKED");
+
     document.getElementById("examContent").style.display = "block";
     this.style.display = "none";
 
     await startCameraMic();
+    console.log("✅ Camera done");
+
     await loadFaceModel();
+    console.log("✅ Model loaded");
 
     startFaceDetection();
+    console.log("✅ Face detection started");
+
     startEyeTracking();
+    console.log("✅ Eye tracking started");
+
     startAudioDetection();
+    console.log("✅ Audio started");
+
     startFullscreen();
     startTimer();
 
