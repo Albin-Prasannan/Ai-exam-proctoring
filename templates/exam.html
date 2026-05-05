@@ -8,6 +8,7 @@
 
     <!-- Face Detection -->
     <script src="https://unpkg.com/face-api.js@0.22.2/dist/face-api.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js"></script>
 
     <style>
         body { font-family: Arial; background:#f4f6f9; }
@@ -277,6 +278,8 @@ function startEyeTracking() {
         return;
     }
 
+    webgazer.setRegression('ridge');
+
     let lookAwayStart = null;
 
     webgazer.setGazeListener((data) => {
@@ -292,18 +295,21 @@ function startEyeTracking() {
             data.y < h * 0.2 ||
             data.y > h * 0.8
         ) {
-
             if (!lookAwayStart) lookAwayStart = Date.now();
 
             if (Date.now() - lookAwayStart > 3000) {
                 autoSubmit("Looking Away");
             }
-
         } else {
             lookAwayStart = null;
         }
 
-    }).begin();
+    });
+
+    // 🔥 FIX: correct model path
+    webgazer.params.faceMeshUrl = "https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/";
+
+    webgazer.begin();
 
     webgazer.showVideo(false);
     webgazer.showFaceOverlay(false);
