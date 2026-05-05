@@ -124,6 +124,53 @@ async function loadFaceModel() {
         console.log("❌ Face model load error:", err);
     }
 }
+// ================= EYE TRACKING =================
+function startEyeTracking() {
+
+    if (!window.webgazer) {
+        console.log("❌ webgazer not loaded");
+        return;
+    }
+
+    // 🔥 IMPORTANT: disable mediapipe (prevents your previous errors)
+    webgazer.params.use_face_mesh = false;
+
+    let lookAwayStart = null;
+
+    webgazer.setGazeListener((data) => {
+
+        if (!data) return;
+
+        let w = window.innerWidth;
+        let h = window.innerHeight;
+
+        // 👇 detect looking away
+        if (
+            data.x < w * 0.2 ||
+            data.x > w * 0.8 ||
+            data.y < h * 0.2 ||
+            data.y > h * 0.8
+        ) {
+
+            if (!lookAwayStart) lookAwayStart = Date.now();
+
+            if (Date.now() - lookAwayStart > 3000) {
+                autoSubmit("Looking Away");
+            }
+
+        } else {
+            lookAwayStart = null;
+        }
+
+    }).begin();
+
+    // 🔥 hide extra video (fix double camera issue)
+    webgazer.showVideo(false);
+    webgazer.showFaceOverlay(false);
+    webgazer.showPredictionPoints(false);
+
+    console.log("✅ Eye tracking running WITHOUT mediapipe");
+}
 
 // ================= START BUTTON =================
 const startBtn = document.getElementById("startBtn");
