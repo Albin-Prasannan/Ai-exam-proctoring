@@ -109,6 +109,22 @@ function autoSubmit(reason) {
     if (form) form.submit();
 }
 
+// ================= FACE MODEL =================
+async function loadFaceModel() {
+
+    if (!window.faceapi) {
+        console.log("❌ faceapi missing");
+        return;
+    }
+
+    try {
+        await faceapi.nets.tinyFaceDetector.loadFromUri("/static/models");
+        console.log("✅ Face model loaded");
+    } catch (err) {
+        console.log("❌ Face model load error:", err);
+    }
+}
+
 // ================= START BUTTON =================
 const startBtn = document.getElementById("startBtn");
 
