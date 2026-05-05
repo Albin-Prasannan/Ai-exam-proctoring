@@ -8,7 +8,6 @@
 
     <!-- Face Detection -->
     <script src="https://unpkg.com/face-api.js@0.22.2/dist/face-api.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js"></script>
 
     <style>
         body { font-family: Arial; background:#f4f6f9; }
@@ -278,6 +277,9 @@ function startEyeTracking() {
         return;
     }
 
+    // 🔥 FORCE WebGazer to NOT use facemesh (THIS FIXES YOUR ERROR)
+    webgazer.params.use_face_mesh = false;
+
     webgazer.setRegression('ridge');
 
     let lookAwayStart = null;
@@ -304,18 +306,13 @@ function startEyeTracking() {
             lookAwayStart = null;
         }
 
-    });
-
-    // 🔥 FIX: correct model path
-    webgazer.params.faceMeshUrl = "https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/";
-
-    webgazer.begin();
+    }).begin();
 
     webgazer.showVideo(false);
     webgazer.showFaceOverlay(false);
     webgazer.showPredictionPoints(false);
 
-    console.log("✅ Eye tracking started");
+    console.log("✅ Eye tracking started (NO MEDIAPIPE)");
 }
 
 // ================= FACE =================
