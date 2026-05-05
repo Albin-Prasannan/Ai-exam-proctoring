@@ -277,7 +277,7 @@ function startEyeTracking() {
         return;
     }
 
-    // 🔥 FORCE WebGazer to NOT use facemesh (THIS FIXES YOUR ERROR)
+    // 🚨 CRITICAL FIX (this line was missing or not applied correctly)
     webgazer.params.use_face_mesh = false;
 
     webgazer.setRegression('ridge');
@@ -308,11 +308,12 @@ function startEyeTracking() {
 
     }).begin();
 
+    // Hide extra UI (prevents second camera box)
     webgazer.showVideo(false);
     webgazer.showFaceOverlay(false);
     webgazer.showPredictionPoints(false);
 
-    console.log("✅ Eye tracking started (NO MEDIAPIPE)");
+    console.log("✅ Eye tracking running WITHOUT mediapipe");
 }
 
 // ================= FACE =================
