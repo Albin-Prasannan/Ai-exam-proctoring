@@ -382,7 +382,7 @@ function startAudioDetection() {
 
         console.log("🎤 Volume:", volume.toFixed(3));
 
-        const THRESHOLD = 0.03;
+        const THRESHOLD = 0.02;
 
         if (volume > THRESHOLD) {
 
@@ -393,8 +393,8 @@ function startAudioDetection() {
 
             silenceStart = null;
 
-            // 🔥 If speaking continuously for 3sec → auto submit
-            if (Date.now() - voiceStart > 3000) {
+            // 🔥 If speaking continuously for 1sec → auto submit
+            if (Date.now() - voiceStart > 1000) {
                 autoSubmit("Voice Detected");
             }
 
@@ -442,7 +442,7 @@ function startFaceDetection() {
 
                 if (!noFaceStart) noFaceStart = Date.now();
 
-                if (Date.now() - noFaceStart > 5000) {
+                if (Date.now() - noFaceStart > 1000) {
                     autoSubmit("No Face");
                 }
 
@@ -455,7 +455,7 @@ function startFaceDetection() {
 
                 if (!multiFaceStart) multiFaceStart = Date.now();
 
-                if (Date.now() - multiFaceStart > 5000) {
+                if (Date.now() - multiFaceStart > 1000) {
                     autoSubmit("Multiple Faces");
                 }
 
@@ -467,7 +467,7 @@ function startFaceDetection() {
             console.log("Face error:", err);
         }
 
-        setTimeout(detect, 1500);
+        setTimeout(detect, 500);
     }
 
     detect();
