@@ -303,7 +303,9 @@ function startAudioDetection() {
     }
 
     let data = new Uint8Array(512);
+
     let voiceStart = null;
+    let silenceStart = null;
 
     function checkAudio() {
 
@@ -317,19 +319,33 @@ function startAudioDetection() {
 
         let volume = Math.sqrt(sum / data.length);
 
-        console.log("🎤 Volume:", volume.toFixed(3));  // 👈 DEBUG LINE
+        console.log("🎤 Volume:", volume.toFixed(3));
 
-        // 🔥 LOWER THRESHOLD
-        if (volume > 0.03) {
+        const THRESHOLD = 0.03;
 
-            if (!voiceStart) voiceStart = Date.now();
+        if (volume > THRESHOLD) {
 
-            if (Date.now() - voiceStart > 2000) {
+            if (!voiceStart) {
+                voiceStart = Date.now();
+                console.log("🟡 Voice started");
+            }
+
+            silenceStart = null;
+
+            // 🔥 If speaking continuously for 3sec → auto submit
+            if (Date.now() - voiceStart > 3000) {
                 autoSubmit("Voice Detected");
             }
 
         } else {
-            voiceStart = null;
+
+            // 👇 DO NOT reset immediately
+            if (!silenceStart) silenceStart = Date.now();
+
+            // 🔥 allow small silence gaps (1.5 sec tolerance)
+            if (Date.now() - silenceStart > 1500) {
+                voiceStart = null;
+            }
         }
 
         requestAnimationFrame(checkAudio);
