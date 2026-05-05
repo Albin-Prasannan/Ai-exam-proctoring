@@ -67,23 +67,27 @@
 </div>
 
 <script>
+document.addEventListener("DOMContentLoaded", function () {
+
+console.log("🔥 SCRIPT LOADED");
 
 // ================= GLOBAL =================
-let timeLeft = parseInt(document.body.dataset.duration) * 60;
+let timeLeft = parseInt(document.body.dataset.duration || "30") * 60;
 let timerInterval;
 let examStarted = false;
 let submitted = false;
 
 let cameraStarted = false;
-let audioContext, analyser;
+let audioContext = null;
+let analyser = null;
 
 // ================= REPORT =================
 function reportViolation(status) {
     fetch('/report_violation', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: status })
-    });
+        body: JSON.stringify({ status })
+    }).catch(() => {});
 }
 
 // ================= AUTO SUBMIT =================
@@ -91,14 +95,22 @@ function autoSubmit(reason) {
     if (submitted) return;
     submitted = true;
 
+    console.log("🚨 AutoSubmit:", reason);
     reportViolation(reason);
-    console.log("Violation:", reason);
 
-    document.getElementById("examForm").submit();
+    const form = document.getElementById("examForm");
+    if (form) form.submit();
 }
 
-// ================= START =================
-document.getElementById("startBtn").onclick = async function () {
+// ================= START BUTTON =================
+const startBtn = document.getElementById("startBtn");
+
+if (!startBtn) {
+    console.log("❌ startBtn not found");
+    return;
+}
+
+startBtn.onclick = async function () {
 
     console.log("🚀 START CLICKED");
 
@@ -112,13 +124,8 @@ document.getElementById("startBtn").onclick = async function () {
     console.log("✅ Model loaded");
 
     startFaceDetection();
-    console.log("✅ Face detection started");
-
     startEyeTracking();
-    console.log("✅ Eye tracking started");
-
     startAudioDetection();
-    console.log("✅ Audio started");
 
     startFullscreen();
     startTimer();
@@ -135,36 +142,33 @@ function startTimer() {
         updateTimer();
 
         if (timeLeft <= 0) autoSubmit("Time Up");
-
     }, 1000);
 }
 
 function updateTimer() {
-    let m = Math.floor(timeLeft/60);
-    let s = timeLeft%60;
-    document.getElementById("timer").innerText =
-        `${m}:${s<10?"0"+s:s}`;
+    const el = document.getElementById("timer");
+    if (!el) return;
+
+    let m = Math.floor(timeLeft / 60);
+    let s = timeLeft % 60;
+    el.innerText = `${m}:${s < 10 ? "0" + s : s}`;
 }
 
 // ================= FULLSCREEN =================
 function startFullscreen() {
-    let el = document.documentElement;
-    if (el.requestFullscreen) el.requestFullscreen();
+    const el = document.documentElement;
+    if (el.requestFullscreen) el.requestFullscreen().catch(() => {});
 }
 
 document.addEventListener("fullscreenchange", () => {
     if (!examStarted) return;
-    if (!document.fullscreenElement) {
-        autoSubmit("Fullscreen Exit");
-    }
+    if (!document.fullscreenElement) autoSubmit("Fullscreen Exit");
 });
 
 // ================= TAB SWITCH =================
 document.addEventListener("visibilitychange", () => {
     if (!examStarted) return;
-    if (document.hidden) {
-        autoSubmit("Tab Switch");
-    }
+    if (document.hidden) autoSubmit("Tab Switch");
 });
 
 // ================= BLOCK SHORTCUTS =================
@@ -182,15 +186,10 @@ async function startCameraMic() {
     cameraStarted = true;
 
     try {
-
         const video = document.getElementById("camera");
 
-        if (video.srcObject) {
-            video.srcObject.getTracks().forEach(track => track.stop());
-        }
-
         const stream = await navigator.mediaDevices.getUserMedia({
-            video: true,
+            video: { facingMode: "user" },
             audio: true
         });
 
@@ -205,7 +204,10 @@ async function startCameraMic() {
 
         // AUDIO
         audioContext = new (window.AudioContext || window.webkitAudioContext)();
-        if (audioContext.state === "suspended") await audioContext.resume();
+
+        if (audioContext.state === "suspended") {
+            await audioContext.resume();
+        }
 
         analyser = audioContext.createAnalyser();
         const source = audioContext.createMediaStreamSource(stream);
@@ -214,7 +216,7 @@ async function startCameraMic() {
         console.log("✅ Camera + Mic Ready");
 
     } catch (err) {
-        console.log("Camera Error:", err);
+        console.log("❌ Camera Error:", err);
         autoSubmit("Camera Blocked");
     }
 }
@@ -222,7 +224,10 @@ async function startCameraMic() {
 // ================= AUDIO =================
 function startAudioDetection() {
 
-    if (!analyser) return;
+    if (!analyser) {
+        console.log("❌ analyser not ready");
+        return;
+    }
 
     let data = new Uint8Array(512);
     let voiceStart = null;
@@ -260,7 +265,10 @@ function startAudioDetection() {
 // ================= EYE =================
 function startEyeTracking() {
 
-    if (!window.webgazer) return;
+    if (!window.webgazer) {
+        console.log("❌ webgazer not found");
+        return;
+    }
 
     let lookAwayStart = null;
 
@@ -268,11 +276,14 @@ function startEyeTracking() {
 
         if (!data) return;
 
+        let w = window.innerWidth;
+        let h = window.innerHeight;
+
         if (
-            data.x < 0 ||
-            data.x > window.innerWidth ||
-            data.y < 0 ||
-            data.y > window.innerHeight
+            data.x < w * 0.2 ||
+            data.x > w * 0.8 ||
+            data.y < h * 0.2 ||
+            data.y > h * 0.8
         ) {
 
             if (!lookAwayStart) lookAwayStart = Date.now();
@@ -289,7 +300,6 @@ function startEyeTracking() {
 
     webgazer.showVideo(false);
     webgazer.showFaceOverlay(false);
-    webgazer.showFaceFeedbackBox(false);
     webgazer.showPredictionPoints(false);
 
     console.log("✅ Eye tracking started");
@@ -300,7 +310,6 @@ async function loadFaceModel() {
     await faceapi.nets.tinyFaceDetector.loadFromUri(
         "https://justadudewhohacks.github.io/face-api.js/models"
     );
-    console.log("✅ Face model loaded");
 }
 
 let noFaceStart = null;
@@ -312,17 +321,18 @@ function startFaceDetection() {
 
     async function detect() {
 
-        if (video.readyState !== 4) {
+        if (!video || video.readyState < 2) {
             setTimeout(detect, 1000);
             return;
         }
 
         try {
-
             const detections = await faceapi.detectAllFaces(
                 video,
                 new faceapi.TinyFaceDetectorOptions()
             );
+
+            console.log("Faces:", detections.length);
 
             // NO FACE
             if (detections.length === 0) {
@@ -365,6 +375,7 @@ window.onbeforeunload = () => {
     clearInterval(timerInterval);
 };
 
+});
 </script>
 
 </body>
